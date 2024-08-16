@@ -36,7 +36,7 @@ class Client(object):
     is instantiated.
     """
 
-    def __init__(self, host, token=None, activate_logging=False):
+    def __init__(self, host, token=None, activate_logging=False, api_version="v1"):
         """
         :param str host: the domain name of the Koordinates site to connect to (eg. ``labs.koordinates.com``)
         :param str token: Koordinates API token to use for authentication
@@ -52,6 +52,7 @@ class Client(object):
         logger.debug("Initializing Client object for %s", host)
 
         self.host = host
+        self.api_version = api_version
 
         if token:
             self.token = token
@@ -63,7 +64,7 @@ class Client(object):
             )
 
         self._user_agent = requests_toolbelt.user_agent(
-            "KoordinatesPython", _version('koordinates')
+            "KoordinatesPython", _version("koordinates")
         )
 
         self._init_managers(
@@ -89,7 +90,10 @@ class Client(object):
 
         self._session = requests.Session()
         self._session.headers.update(
-            {"Accept": "application/json", "User-Agent": self._user_agent,}
+            {
+                "Accept": "application/json",
+                "User-Agent": self._user_agent,
+            }
         )
         if self.token:
             self._session.headers["Authorization"] = "key {token}".format(
@@ -166,7 +170,9 @@ class Client(object):
 
         return r
 
-    def _raw_request(self, method, url, headers, *args, allow_xdomain_redirects=False, **kwargs):
+    def _raw_request(
+        self, method, url, headers, *args, allow_xdomain_redirects=False, **kwargs
+    ):
         # for the Koordinates library logging, strip auth tokens from log messages
         # and log POST/PUT bodies if we're sending JSON.
         # Get low-level logging via the requests.packages.urllib3 logger.
@@ -201,7 +207,7 @@ class Client(object):
         return urlparse(url1).hostname == urlparse(url2).hostname
 
     def get_url_path(self, datatype, verb, urltype, params={}, api_version=None):
-        api_version = api_version or "v1"
+        api_version = api_version or self.api_version
         templates = getattr(self, "URL_TEMPLATES__%s" % api_version)
 
         url = templates[datatype][verb][urltype]
@@ -219,7 +225,7 @@ class Client(object):
         :param urltype: an adjective used to the nature of the request.
         :return: dict
         """
-        api_version = api_version or "v1"
+        api_version = api_version or self.api_version
         templates = getattr(self, "URL_TEMPLATES__%s" % api_version)
 
         # this is fairly simplistic, if necessary we could use the parse lib
@@ -253,7 +259,7 @@ class Client(object):
         :return: string
         :rtype: A fully formed url.
         """
-        api_version = api_version or "v1"
+        api_version = api_version or self.api_version
         api_host = api_host or self.host
 
         subst = params.copy()
@@ -275,7 +281,9 @@ class Client(object):
                 "create": "/layers/",
                 "update": "/layers/{layer_id}/versions/import/",
             },
-            "DELETE": {"delete": "/layers/{id}/",},
+            "DELETE": {
+                "delete": "/layers/{id}/",
+            },
         },
         "LAYER_VERSION": {
             "GET": {
@@ -289,8 +297,12 @@ class Client(object):
                 "import": "/layers/{layer_id}/versions/{version_id}/import/",
                 "publish": "/layers/{layer_id}/versions/{version_id}/publish/",
             },
-            "PUT": {"edit": "/layers/{layer_id}/versions/{version_id}/",},
-            "DELETE": {"single": "/layers/{layer_id}/versions/{version_id}/",},
+            "PUT": {
+                "edit": "/layers/{layer_id}/versions/{version_id}/",
+            },
+            "DELETE": {
+                "single": "/layers/{layer_id}/versions/{version_id}/",
+            },
         },
         "SET": {
             "GET": {
@@ -299,8 +311,12 @@ class Client(object):
                 "multi": "/sets/",
                 "multidraft": "/sets/drafts/",
             },
-            "POST": {"create": "/sets/",},
-            "DELETE": {"delete": "/sets/{id}/",},
+            "POST": {
+                "create": "/sets/",
+            },
+            "DELETE": {
+                "delete": "/sets/{id}/",
+            },
         },
         "SET_VERSION": {
             "GET": {
@@ -313,14 +329,30 @@ class Client(object):
                 "create": "/sets/{id}/versions/",
                 "publish": "/sets/{id}/versions/{version_id}/publish/",
             },
-            "PUT": {"edit": "/sets/{id}/versions/{version_id}/",},
-            "DELETE": {"single": "/sets/{id}/versions/{version_id}/",},
+            "PUT": {
+                "edit": "/sets/{id}/versions/{version_id}/",
+            },
+            "DELETE": {
+                "single": "/sets/{id}/versions/{version_id}/",
+            },
         },
-        "CATALOG": {"GET": {"multi": "/data/", "latest": "/data/latest/",},},
+        "CATALOG": {
+            "GET": {
+                "multi": "/data/",
+                "latest": "/data/latest/",
+            },
+        },
         "PUBLISH": {
-            "GET": {"single": "/publish/{id}/", "multi": "/publish/",},
-            "POST": {"create": "/publish/",},
-            "DELETE": {"single": "/publish/{id}/",},
+            "GET": {
+                "single": "/publish/{id}/",
+                "multi": "/publish/",
+            },
+            "POST": {
+                "create": "/publish/",
+            },
+            "DELETE": {
+                "single": "/publish/{id}/",
+            },
         },
         "LICENSE": {
             "GET": {
@@ -331,13 +363,24 @@ class Client(object):
         },
         "METADATA": {
             # InnerManager, so relative to a parent object
-            "GET": {"get": "metadata/",},
-            "POST": {"set": "metadata/",},
+            "GET": {
+                "get": "metadata/",
+            },
+            "POST": {
+                "set": "metadata/",
+            },
         },
         "SOURCE": {
-            "GET": {"single": "/sources/{id}/", "multi": "/sources/",},
-            "POST": {"create": "/sources/",},
-            "DELETE": {"single": "/sources/{id}/",},
+            "GET": {
+                "single": "/sources/{id}/",
+                "multi": "/sources/",
+            },
+            "POST": {
+                "create": "/sources/",
+            },
+            "DELETE": {
+                "single": "/sources/{id}/",
+            },
         },
         "SCAN": {
             "GET": {
@@ -346,8 +389,12 @@ class Client(object):
                 "log": "/sources/{source_id}/scans/{scan_id}/log/",
                 "all": "/sources/scans/",
             },
-            "DELETE": {"cancel": "/sources/{source_id}/scans/{scan_id}/",},
-            "POST": {"create": "/sources/{source_id}/scans/",},
+            "DELETE": {
+                "cancel": "/sources/{source_id}/scans/{scan_id}/",
+            },
+            "POST": {
+                "create": "/sources/{source_id}/scans/",
+            },
         },
         "DATASOURCE": {
             "GET": {
@@ -357,15 +404,32 @@ class Client(object):
         },
         # InnerManager, so relative to a parent object
         "PERMISSION": {
-            "GET": {"multi": "permissions/", "single": "permissions/{permission_id}/",},
-            "POST": {"single": "permissions/",},
-            "PUT": {"multi": "permissions/",},
+            "GET": {
+                "multi": "permissions/",
+                "single": "permissions/{permission_id}/",
+            },
+            "POST": {
+                "single": "permissions/",
+            },
+            "PUT": {
+                "multi": "permissions/",
+            },
         },
         "EXPORT": {
-            "GET": {"multi": "/exports/", "single": "/exports/{id}/",},
-            "POST": {"create": "/exports/", "validate": "/exports/validate/",},
-            "OPTIONS": {"options": "/exports/",},
-            "DELETE": {"single": "/exports/{id}/",},
+            "GET": {
+                "multi": "/exports/",
+                "single": "/exports/{id}/",
+            },
+            "POST": {
+                "create": "/exports/",
+                "validate": "/exports/validate/",
+            },
+            "OPTIONS": {
+                "options": "/exports/",
+            },
+            "DELETE": {
+                "single": "/exports/{id}/",
+            },
         },
         "CROPLAYER": {
             "GET": {
